@@ -11,15 +11,25 @@
 			</span>|
 			<span class="create-time">
 				<span class="text-bold">时间:</span>
-				<%= moment(art.createTime).locale('zh-cn').format('LL HH:mm:ss') %>
+				<%= moment(art.createTime).format('LL HH:mm:ss') %>
 			</span>|
 			<span class="pv">
 				<span class="text-bold">浏览:</span>
 				<%= art.pv %>
 			</span>|
-			<span class="label label-info"><%= art.tag %></span>
+			<span class="tag"><%= art.tag %></span>
 		</p>
+		<p></p>
+		<p></p>
 		<p><%= art.content %></p>
+		<% if(user) { %>
+			<% if(art.author == user.username) { %>
+			<div class="control">
+					<a href="/remove/<%= art._id %>" class="pull-right remove">删除</a>
+					<a href="/edit/<%= art._id %>" class="pull-right edit">编辑</a>
+			</div>
+			<% } %>
+		<% } %>
 	</div>
 <% }); %>
 

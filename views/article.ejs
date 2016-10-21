@@ -1,0 +1,28 @@
+<%- include header %>
+<div class="article">
+	<a href="/u/<%= art.author %>/<%= art._id %>">
+		<h1><%= art.title %></h1>
+	</a>
+	<p>
+		<span class="author">
+			<span class="text-bold">作者:</span>
+			<a href="/u/<%= art.author %>"><%= art.author %></a>
+		</span>|
+		<span class="author">
+			<a href="/edit/<%= art._id %>"><span class="tag">编辑</span></a>
+		</span>|
+		<span class="create-time">
+			<span class="text-bold">时间:</span>
+			<%= moment(art.createTime).format('LL HH:mm:ss') %>
+		</span>|
+		<span class="pv">
+			<span class="text-bold">浏览:</span>
+			<%= art.pv %>
+		</span>|
+		<span class="tag"><%= art.tag %></span>
+	</p>
+	<p></p>
+	<p></p>
+	<p><%= art.content %></p>
+</div>
+<%- include footer %>

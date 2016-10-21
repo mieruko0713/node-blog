@@ -4,31 +4,39 @@ var mongoose = require("mongoose");
 var crypto = require("crypto");
 var model = require("../models/models");
 var User = model.User;
+var Article  = model.Article;
+var checkIsLogin = require("./checkIsLogin");
+var moment = require("moment");
 
+var page = 1;
+var pageSize = 5;
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  return res.render('index', {
-  	title: '主页',
-  	user:req.session.user,
-  	 arts: [{
-            title: 'nodeJS入门',
-            tags: 'nodeJS',
-            author: '...',
-            createTime: '',
-            content: '...'
-        },{
-            title: 'nodeJS入门',
-            tags: 'nodeJS',
-            author: '...',
-            createTime: '',
-            content: '...'
-        },{
-            title: 'nodeJS入门',
-            tags: 'nodeJS',
-            author: '...',
-            createTime: '',
-            content: '...'
-        }]
+    page = req.query.page ? parseInt(req.query.page) : 1;
+    Article.count(function(err, total){
+    	Article.find()
+    			.skip((page-1)*pageSize)
+    			.limit(pageSize)
+    			.sort("-createTime")
+    			.exec(function(err, arts) {
+    				if(err) {
+    					req.flash("error",err);
+    					return res.redirect("/");
+    				}
+    				return res.render("index",{
+    					title:"WanBlog",
+    					user:req.session.user,
+    					success:req.flash("success").toString(),
+    					error:req.flash("error").toString(),
+    					total:total,
+    					page:page,
+    					pageSize:pageSize,
+    					isFirstPage:(page-1) == 0,
+    					isLastPage:((page-1)*pageSize+arts.length) == total,
+    					arts:arts,
+    					moment:moment
+    				});
+    			});
     });
 });
 
@@ -105,6 +113,10 @@ router.post("/reg",function(req,res,next){
 	});
 	
 });
+router.get("/post",checkIsLogin.notLogin);
+router.get("/post",function(req,res,next) {
+	return res.render("post",{user:req.session.user,title:"发表"});
+});
 router.post("/post",function(req,res,next) {
 	var data = new Article({
 		title:req.body.title,
@@ -115,11 +127,14 @@ router.post("/post",function(req,res,next) {
 	data.save(function(err,doc){
 		if(err) {
 			req.flash("error",err);
-			return res.redirect("/post",{error:req.flash("error").toString()});
+			console.log(err);
+			return res.redirect("/post");
 		}
 		req.flash("success","文章发表成功!");
+		res.redirect("/");
 	});
 });
+
 router.get("/remove/:_id",function(req,res,next){
 	// req.params处理/:xxx形式的get post请求
 	Article.remove({_id:req.params._id},function(err){
@@ -131,15 +146,20 @@ router.get("/remove/:_id",function(req,res,next){
 		return res.redirect("back");
 	});
 });
+router.get("/edit/:_id",checkIsLogin.notLogin);
 router.get("/edit/:_id",function(req,res,next) {
-	Article.findOne({_id:req.params._id},function(err,art) {
+	Article.findOne({_id: req.params._id}, function(err, art) {
 		if(err) {
-			req.flash("error",err);
-			return res.redirect("back");
+			req.flash('error', err);
+			return res.redirect('back');
 		}
-		return res.render("edit",{
-			title:"编辑",
-			art:art
+		res.render('edit', {
+			title: '编辑',
+			user: req.session.user,
+			success: req.flash('success').toString(),
+			error: req.flash('error').toString(),
+			moment: moment,
+			art: art
 		});
 	});
 });
@@ -165,7 +185,12 @@ router.get("/search",function(req,res,next) {
 	//req.query 获取get 请求中url后面的参数 构造正则对象
 	var query = req.query.title,
 		title = new RegExp(query,"i");
-	Article.find({title:title})
+	page = req.query.page?parseInt(req.query.page):1;
+	Article.count({tirle:title}).
+	        exec(function(err,total){
+	        	Article.find({title:title})
+	        			.skip((page-1)*pageSize)
+	       .limit(pageSize)
 	        .sort("-createTime")
 	        .exec(function(err,arts){
 	        	if(err) {
@@ -173,9 +198,82 @@ router.get("/search",function(req,res,next) {
 	        		return res.redirect("/");
 	        	}
 	        	res.render("search",{
-	        		title:"查询结果",
-	        		arts:arts
+	        		title: '查询结果',
+				user: req.session.user,
+				success: req.flash('success').toString(),
+				error: req.flash('error').toString(),
+				search: query,
+				total: total,
+				page: page,
+				pageSize: pageSize,
+				isFirstPage: (page - 1) == 0,
+				isLastPage: ((page - 1) * pageSize + arts.length) == total,
+				arts: arts,
+				moment: moment
 	        	});
 	        });
+	        });
+	       
+});
+router.get('/u/:author/:_id', function(req, res, next) {
+	Article.findOne({
+		author: req.params.author,
+		_id: req.params._id
+	}, function(err, art) {
+			if(err) {
+				req.flash('error', '抱歉，因不明原因，此文章已从银河系消失！');
+				return res.redirect('/');
+			}
+			if(art) {
+				Article.update({
+					_id: req.params._id
+				},{
+					 $inc: {'pv': 1}
+				}, function(err) {
+					if(err) {
+						return req.flash('error', err);
+					}
+				});
+			}
+			res.render('article', {
+				title: '文章内容',
+				user: req.session.user,
+				success: req.flash('success').toString(),
+				error: req.flash('error').toString(),
+				moment: moment,
+				art: art
+			});
+		});
+});
+router.get('/u/:author', function(req, res, next) {
+	page = req.query.page ? parseInt(req.query.page) : 1;
+	Article
+	.count({author: req.params.author})
+	.exec(function(err, total) {
+		Article
+		.find({author: req.params.author})
+		.skip((page - 1) * pageSize) 
+		.limit(pageSize)
+		.sort('-createTime')
+		.exec(function(err, arts) {
+			if(err) {
+				req.flash('error', err);
+				return res.redirect('/');
+			}
+			res.render('user', { 
+				title: req.params.author ,
+				user: req.session.user,
+				success: req.flash('success').toString(),
+				error: req.flash('error').toString(),
+				total: total,
+				page: page,
+				pageSize: pageSize,
+				isFirstPage: (page - 1) == 0,
+				isLastPage: ((page - 1) * pageSize + arts.length) == total,
+				arts: arts,
+				moment: moment
+			});
+		});
+	});
 });
 module.exports = router;

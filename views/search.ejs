@@ -1,0 +1,47 @@
+<%- include header %>
+<% arts.forEach(function(art) { %>
+	<div class="article">
+		<a href="/u/<%= art.author%>/<%= art._id%>">
+			<h1><%= art.title %></h1>
+		</a>
+		<p>
+			<span class="author">
+				<span class="text-bold">作者:</span>
+				<a href="/u/<%= art.author %>"><%= art.author %></a>
+			</span>
+			<span class="create-time">
+				<span class="text-bold">时间:</span>
+				<%= moment(art.createTime).format("LL HH:mm:ss") %>
+			</span>
+			<span class="tag">
+				<%= art.content %>
+			</span>
+		</p>
+	</div>
+<% }); %>
+	<nav>
+	    <ul class="pager">
+	    	<% if(!isFirstPage) { %>
+	    	    <li>
+	    	    	<a href="?page=1">
+	    	    		<span arial-hidden="true">首页</span>
+	    	    	</a>
+	    	    </li>
+	    	    <li>
+	    	    	<a href="?page=<%= page-1 %>">
+	    	    	    <span>&laquo;上一页</span>
+	    	        </a>
+	    	    </li>
+	    	    <li>
+	    	    	<a href="?page=<%= Math.ceil(total/pageSize) %>">
+	    	    		<span>末页</span>
+	    	    	</a>
+	    	    </li>
+	    	 <% } %>
+	    </ul>
+    </nav>
+    <div id="pagination-box"></div>
+
+    <div id="blog-data" data-total="<%= total %>" data-page="<%= page %>" data-pagesize="<%= pageSize %>" data-isfirstpage="<%= isFirstPage %>" data-islastpage="<%= isLastPage %>"></div>
+    <script src="/views-js/pagination.js"></script>
+<%- include footer %>
