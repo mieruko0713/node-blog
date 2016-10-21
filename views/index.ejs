@@ -1,0 +1,10 @@
+<%- include header %>
+<%= title %>
+<% arts.forEach(function(art) { %>
+	<%= art.title %>
+	<%= art.tags %>
+	<%= art.author %>
+	<%= art.createTime %>
+	<%= art.content %>
+<% }) %>
+<%- include footer %>
